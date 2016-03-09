@@ -50,9 +50,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CustomErrorHandlingBehavior_old.cs" />
     <Compile Include="CustomErrorHandlingBehaviour.cs" />
-    <Compile Include="InitializeCustomFaultHandlingBehavior.cs" />
     <Compile Include="MyMessage.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="MyMessageHandler.cs" />
