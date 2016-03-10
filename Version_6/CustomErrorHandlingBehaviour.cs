@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using NServiceBus;
 using NServiceBus.Pipeline;
@@ -7,17 +6,8 @@ using NServiceBus.Pipeline;
 
 class CustomErrorHandlingBehaviour : Behavior<ITransportReceiveContext>
 {
-    private readonly CriticalError _criticalError;
-
-    public CustomErrorHandlingBehaviour(CriticalError criticalError)
-    {
-        _criticalError = criticalError;
-    }
-
     public override async Task Invoke(ITransportReceiveContext context, Func<Task> next)
     {
-        var message = context.Message;
-
         try
         {
             await next().ConfigureAwait(false);
@@ -26,28 +16,17 @@ class CustomErrorHandlingBehaviour : Behavior<ITransportReceiveContext>
         {
             Console.WriteLine("CustomFaultManager - SerializationFailedForMessage");
         }
-        catch (SerializationException)
+        catch (Exception)
         {
-            Console.WriteLine("CustomFaultManager - SerializationFailedForMessage");
-        }
-        catch (InvalidOperationException)
-        {
-            Console.WriteLine("CustomFaultManager - SerializationFailedForMessage");
+            // what is "Processing Always Fails For Message"? Not including SLR doesn't seem obvious for me, so it should be up to the user whether to include SLR or not.
             Console.WriteLine("CustomFaultManager - ProcessingAlwaysFailsForMessage");
-        }
-        catch (Exception exception)
-        {
-            try
-            {
-                Console.WriteLine(
-                    $"MyOwnFaultManager - Processing always fails for message '{message.MessageId}' due to an exception:",
-                    exception);
-            }
-            catch (Exception ex)
-            {
-                _criticalError.Raise("Failed to process Custom Policy for errors", ex);
-                throw;
-            }
+            
+            // do not rethrow the message if you want to mark the message as processed.
+            // rethrow to move the message to the error queue.
+            //throw;
+
+            // if you want to rollback the receive operation instead of mark as processed:
+            //context.AbortReceiveOperation();
         }
     }
 }
@@ -56,11 +35,16 @@ class CustomErrorHandlingBehaviour : Behavior<ITransportReceiveContext>
 class NewMessageProcessingPipelineStep : RegisterStep
 {
     public NewMessageProcessingPipelineStep()
-        : base("ForwardMessagesToSqlTransport", typeof(CustomErrorHandlingBehaviour), "Adds custom error behavior to pipeline")
+        : base("CustomErrorHandlingBehaviour", typeof(CustomErrorHandlingBehaviour), "Adds custom error behavior to pipeline")
     {
-        InsertAfterIfExists("FirstLevelRetries");
-        InsertAfterIfExists("SecondLevelRetries");
-        InsertAfterIfExists("MoveFaultsToErrorQueue");
+        InsertAfter("MoveFaultsToErrorQueue");
+
+        // only invoke this behavior if FLR fails to handle the message
+        InsertBeforeIfExists("FirstLevelRetries");
+
+        // if you want to handle the message before it is moved to error queue, insert after SLR.
+        // if you want to handle the message before it is handled by SLR, insert it before SLR.
+        InsertBeforeIfExists("SecondLevelRetries");
     }
 }
 
