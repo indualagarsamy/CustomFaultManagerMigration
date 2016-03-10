@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using NServiceBus;
+using NServiceBus.Features;
 using NServiceBus.Logging;
 
 static class Program
@@ -22,6 +23,8 @@ static class Program
         endpointConfiguration.UsePersistence<InMemoryPersistence>();
         endpointConfiguration.EnableInstallers();
         endpointConfiguration.SendFailedMessagesTo("error");
+        // if you don't want SLR turn them off
+        //endpointConfiguration.DisableFeature<SecondLevelRetries>();
 
         IEndpointInstance endpoint = await Endpoint.Start(endpointConfiguration);
         try
