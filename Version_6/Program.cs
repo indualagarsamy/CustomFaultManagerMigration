@@ -39,7 +39,7 @@ static class Program
                 {
                     return;
                 }
-                MyMessage m = new MyMessage
+                var m = new MyMessage
                 {
                     Id = Guid.NewGuid()
                 };

@@ -13,6 +13,10 @@ class CustomErrorHandlingBehaviour : Behavior<ITransportReceiveContext>
         {
             await next().ConfigureAwait(false);
         }
+        catch (MessageDeserializationException)
+        {
+            Console.WriteLine("CustomFaultManager - MessageDeserializationException");
+        }
         catch (Exception)
         {
             Console.WriteLine("CustomFaultManager - ProcessingAlwaysFailsForMessage");
