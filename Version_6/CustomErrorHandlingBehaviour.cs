@@ -16,6 +16,7 @@ class CustomErrorHandlingBehaviour : Behavior<ITransportReceiveContext>
         catch (MessageDeserializationException)
         {
             Console.WriteLine("CustomFaultManager - MessageDeserializationException");
+            throw;
         }
         catch (Exception)
         {
